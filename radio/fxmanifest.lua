@@ -16,7 +16,8 @@ supersede_radio 'RADIO_03_HIPHOP_NEW' { url = 'http://stream.radioreklama.bg/nrj
 -- Client scripts
 client_scripts {
 	'data.js',
-	'client.js'
+	'client.js',
+	'radioScript.js'
 }
 
 -- UI files
