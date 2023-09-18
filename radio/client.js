@@ -9,33 +9,38 @@ function getVolume() {
 }
 
 function createRadios() {
-    for (let i = 0, length = GetNumResourceMetadata("radio", "supersede_radio"); i < length; i++) {
-        const radio = GetResourceMetadata("radio", "supersede_radio", i);
-
-        if (!availableRadios.includes(radio)) {
-            console.error(`radio: ${radio} is an invalid radio.`);
-            continue;
-        }
-
-        try {
-            const data = JSON.parse(GetResourceMetadata("radio", "supersede_radio_extra", i));
-            if (data !== null) {
-                customRadios.push({
-                    "isPlaying": false,
-                    "name": radio,
-                    "data": data
-                });
-                if (data.name) {
-                    AddTextEntry(radio, data.name);
-                }
-            } else {
-                console.error(`radio: Missing data for ${radio}.`);
-            }
-        } catch (e) {
-            console.error(e);
-        }
+    const length = GetNumResourceMetadata("radio", "supersede_radio");
+    for (let i = 0; i < length; i++) {
+        addRadioFromMetadata(i);
     }
     sendNuiMessage("create", { "radios": customRadios, "volume": volume });
+}
+
+function addRadioFromMetadata(i) {
+    const radio = GetResourceMetadata("radio", "supersede_radio", i);
+
+    if (!availableRadios.includes(radio)) {
+        console.error(`radio: ${radio} is an invalid radio.`);
+        return;
+    }
+
+    try {
+        const data = JSON.parse(GetResourceMetadata("radio", "supersede_radio_extra", i));
+        if (data) {
+            customRadios.push({
+                "isPlaying": false,
+                "name": radio,
+                "data": data
+            });
+            if (data.name) {
+                AddTextEntry(radio, data.name);
+            }
+        } else {
+            console.error(`radio: Missing data for ${radio}.`);
+        }
+    } catch (e) {
+        console.error(`Error parsing metadata for radio ${radio}:`, e);
+    }
 }
 
 function sendNuiMessage(type, data) {
@@ -50,33 +55,10 @@ on("__cfx_nui:radio:ready", (data, cb) => {
     createRadios();
 });
 
-const PlayCustomRadio = (radio) => {
-    isPlaying = true;
-    index = customRadios.indexOf(radio);
-    ToggleCustomRadioBehavior();
-    sendNuiMessage("play", { "radio": radio.name });
-};
-
-const StopCustomRadios = () => {
-    isPlaying = false;
-    ToggleCustomRadioBehavior();
-    sendNuiMessage("stop");
-};
-
-const ToggleCustomRadioBehavior = () => {
-    SetFrontendRadioActive(!isPlaying);
-
-    if (isPlaying) {
-        StartAudioScene("DLC_MPHEIST_TRANSITION_TO_APT_FADE_IN_RADIO_SCENE");
-    } else {
-        StopAudioScene("DLC_MPHEIST_TRANSITION_TO_APT_FADE_IN_RADIO_SCENE");
-    }
-};
-
-setTick(() => {
+function handleRadioBehavior() {
     if (IsPlayerVehicleRadioEnabled()) {
-        let playerRadioStationName = GetPlayerRadioStationName();
-        let customRadio = customRadios.find((radio) => radio.name === playerRadioStationName);
+        const playerRadioStationName = GetPlayerRadioStationName();
+        const customRadio = customRadios.find(radio => radio.name === playerRadioStationName);
 
         if (!isPlaying && customRadio) {
             PlayCustomRadio(customRadio);
@@ -89,6 +71,10 @@ setTick(() => {
     } else if (isPlaying) {
         StopCustomRadios();
     }
+}
+
+setTick(() => {
+    handleRadioBehavior();
 
     volume = getVolume();
     if (previousVolume !== volume) {
