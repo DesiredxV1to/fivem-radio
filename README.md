@@ -20,6 +20,7 @@ Video showing Los Santos Rock Radio replaced by a WebRadio and Non-Stop-Pop FM r
 ## Known bugs and limitations
 
 * No MPEG or AAC support as CEF only supports open formats
+* While AAC IS supported, it's not recommend as it strains low-end devices, and drops framerates.
 
 ## Configuration
 
